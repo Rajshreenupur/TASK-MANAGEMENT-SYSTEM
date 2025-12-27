@@ -15,6 +15,26 @@ export const loginSchema = z.object({
   }),
 });
 
+export const createProjectSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, 'Project name is required'),
+    description: z.string().optional(),
+  }),
+});
+
+export const inviteMemberSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+  }),
+});
+
+export const paginationSchema = z.object({
+  query: z.object({
+    page: z.string().regex(/^\d+$/).transform(Number).optional(),
+    limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+  }),
+});
+
 export const validate = (schema: z.ZodSchema) => {
   return async (req: any, res: any, next: any) => {
     try {
