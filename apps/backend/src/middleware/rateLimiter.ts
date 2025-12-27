@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 
 const AUTH_WINDOW_MS = parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10); // 15 minutes default
-const AUTH_MAX_REQUESTS = parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5', 10); // 5 requests per window
+const AUTH_MAX_REQUESTS = parseInt(process.env.AUTH_RATE_LIMIT_MAX || '50', 50); // 5 requests per window
 const GENERAL_WINDOW_MS = parseInt(process.env.GENERAL_RATE_LIMIT_WINDOW_MS || '900000', 10); // 15 minutes default
 const GENERAL_MAX_REQUESTS = parseInt(process.env.GENERAL_RATE_LIMIT_MAX || '100', 10); // 100 requests per window
 
