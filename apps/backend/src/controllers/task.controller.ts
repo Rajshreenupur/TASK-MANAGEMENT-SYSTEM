@@ -141,7 +141,6 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
     });
   }
 
-  // Update task
   Object.assign(task, updates);
   await task.save();
 

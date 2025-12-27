@@ -78,7 +78,6 @@ export const inviteMember = async (req: AuthRequest, res: Response): Promise<voi
   const { projectId } = req.params;
   const project = (req as any).project;
 
-  // Find user by email
   const user = await User.findOne({ email });
   if (!user) {
     res.status(404).json({ error: 'User not found' });

@@ -5,11 +5,14 @@ import Signup from "./pages/Signup";
 import { useAuthStore } from "./store/authStore";
 import ProjectList from "./pages/ProjectList";
 import ProjectDetail from "./pages/ProjectDetail";
+import KanbanBoard from "./pages/KanbanBoard";
+import TaskList from "./pages/TaskList";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
   return token ? <>{children}</> : <Navigate to="/login" />;
 }
+
 function App() {
   return (
     <>
@@ -41,7 +44,6 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/" element={<Navigate to="/projects" />} />
           <Route
             path="/projects"
             element={
@@ -58,6 +60,23 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/projects/:projectId/board"
+            element={
+              <PrivateRoute>
+                <KanbanBoard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/tasks"
+            element={
+              <PrivateRoute>
+                <TaskList />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/projects" />} />
         </Routes>
       </BrowserRouter>
     </>

@@ -26,7 +26,6 @@ export const authenticate = async (
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    // Verify user still exists
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       res.status(401).json({ error: 'User not found' });
