@@ -35,6 +35,32 @@ export const paginationSchema = z.object({
   }),
 });
 
+export const createTaskSchema = z.object({
+  body: z.object({
+    title: z.string().min(1, 'Task title is required'),
+    description: z.string().optional(),
+    projectId: z.string().min(1, 'Project ID is required'),
+    assignee: z.string().optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+  }),
+});
+
+export const updateTaskSchema = z.object({
+  body: z.object({
+    title: z.string().min(1).optional(),
+    description: z.string().optional(),
+    status: z.enum(['BACKLOG', 'IN_PROGRESS', 'REVIEW', 'DONE']).optional(),
+    assignee: z.string().optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+  }),
+});
+
+export const updateTaskStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(['BACKLOG', 'IN_PROGRESS', 'REVIEW', 'DONE']),
+  }),
+});
+
 export const validate = (schema: z.ZodSchema) => {
   return async (req: any, res: any, next: any) => {
     try {

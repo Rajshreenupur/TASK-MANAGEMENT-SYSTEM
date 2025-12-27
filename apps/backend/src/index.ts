@@ -5,6 +5,8 @@ import 'express-async-errors';
 import { connectDB } from './config/database';
 import authRoutes from './routes/auth.routes.js';
 import projectRoutes from './routes/project.routes.js';
+import taskRoutes from './routes/task.routes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
 
@@ -17,7 +19,9 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/tasks', taskRoutes);
 
+app.use(errorHandler);
 
 const startServer = async () => {
   try {

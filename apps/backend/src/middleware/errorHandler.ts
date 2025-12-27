@@ -14,7 +14,6 @@ export const errorHandler = (
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
 
-  // Mongoose validation error
   if (err.name === 'ValidationError') {
     statusCode = 400;
     message = Object.values((err as any).errors)
@@ -22,13 +21,11 @@ export const errorHandler = (
       .join(', ');
   }
 
-  // Mongoose duplicate key error
   if ((err as any).code === 11000) {
     statusCode = 400;
     message = 'Duplicate field value entered';
   }
 
-  // Mongoose cast error
   if (err.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
