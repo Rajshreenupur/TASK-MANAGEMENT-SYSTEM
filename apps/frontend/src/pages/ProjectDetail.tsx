@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Layout from '../components/Layout';
 import { projectApi, Project } from '../api/project';
 import { useAuthStore } from '../store/authStore';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function ProjectDetail() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -11,6 +12,8 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
   const { user } = useAuthStore();
 
   const fetchProject = async () => {
@@ -44,15 +47,23 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!projectId) return;
-    if (!confirm('Are you sure you want to remove this member?')) return;
+  const handleRemoveMemberClick = (memberId: string) => {
+    setMemberToRemove(memberId);
+    setShowRemoveDialog(true);
+  };
+
+  const handleRemoveMember = async () => {
+    if (!projectId || !memberToRemove) return;
     try {
-      await projectApi.removeMember(projectId, memberId);
+      await projectApi.removeMember(projectId, memberToRemove);
       toast.success('Member removed successfully!');
+      setShowRemoveDialog(false);
+      setMemberToRemove(null);
       fetchProject();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to remove member');
+      setShowRemoveDialog(false);
+      setMemberToRemove(null);
     }
   };
 
@@ -146,7 +157,7 @@ export default function ProjectDetail() {
                   </div>
                   {isOwner && (
                     <button
-                      onClick={() => handleRemoveMember(member._id)}
+                      onClick={() => handleRemoveMemberClick(member._id)}
                       className="text-red-600 hover:text-red-800 text-sm"
                     >
                       Remove
@@ -195,6 +206,19 @@ export default function ProjectDetail() {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          isOpen={showRemoveDialog}
+          onClose={() => {
+            setShowRemoveDialog(false);
+            setMemberToRemove(null);
+          }}
+          onConfirm={handleRemoveMember}
+          title="Remove Member"
+          message="Are you sure you want to remove this member from the project? This action cannot be undone."
+          confirmText="Remove"
+          cancelText="Cancel"
+        />
       </div>
     </Layout>
   );
