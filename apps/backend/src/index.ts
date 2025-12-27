@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import 'express-async-errors';
 import { connectDB } from './config/database';
 import authRoutes from './routes/auth.routes.js';
-
+import projectRoutes from './routes/project.routes.js';
 
 dotenv.config();
 
@@ -16,6 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
 
 
 const startServer = async () => {
