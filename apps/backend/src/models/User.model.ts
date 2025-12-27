@@ -1,13 +1,22 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+export interface RefreshToken {
+  token: string;
+  expiresAt: Date;
+}
+
 export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
   role: 'OWNER' | 'MEMBER';
+  refreshTokens: RefreshToken[];
   createdAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  addRefreshToken(token: string, expiresAt: Date): void;
+  removeRefreshToken(token: string): void;
+  hasValidRefreshToken(token: string): boolean;
 }
 
 const userSchema = new Schema<IUser>(
@@ -36,6 +45,18 @@ const userSchema = new Schema<IUser>(
       enum: ['OWNER', 'MEMBER'],
       default: 'MEMBER',
     },
+    refreshTokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+        },
+        expiresAt: {
+          type: Date,
+          required: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -52,6 +73,24 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.addRefreshToken = function (token: string, expiresAt: Date): void {
+  this.refreshTokens.push({ token, expiresAt });
+  // Keep only last 5 refresh tokens per user
+  if (this.refreshTokens.length > 5) {
+    this.refreshTokens = this.refreshTokens.slice(-5);
+  }
+};
+
+userSchema.methods.removeRefreshToken = function (token: string): void {
+  this.refreshTokens = this.refreshTokens.filter((rt: RefreshToken) => rt.token !== token);
+};
+
+userSchema.methods.hasValidRefreshToken = function (token: string): boolean {
+  const refreshToken = this.refreshTokens.find((rt: RefreshToken) => rt.token === token);
+  if (!refreshToken) return false;
+  return refreshToken.expiresAt > new Date();
 };
 
 export const User = mongoose.model<IUser>('User', userSchema);

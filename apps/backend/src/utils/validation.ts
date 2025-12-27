@@ -15,6 +15,18 @@ export const loginSchema = z.object({
   }),
 });
 
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, 'Refresh token is required'),
+  }),
+});
+
+export const logoutSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().optional(),
+  }),
+});
+
 export const createProjectSchema = z.object({
   body: z.object({
     name: z.string().min(1, 'Project name is required'),

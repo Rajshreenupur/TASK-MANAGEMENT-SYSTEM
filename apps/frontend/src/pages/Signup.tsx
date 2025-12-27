@@ -31,7 +31,7 @@ export default function Signup() {
         email: data.email,
         password: data.password,
       });
-      setAuth(response.token, response.user);
+      setAuth(response.token, response.refreshToken, response.user);
       toast.success('Account created successfully!');
       navigate('/projects');
     } catch (err: any) {

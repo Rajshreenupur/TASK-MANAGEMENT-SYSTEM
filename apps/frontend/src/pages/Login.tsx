@@ -21,7 +21,7 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const response = await authApi.login(data);
-      setAuth(response.token, response.user);
+      setAuth(response.token, response.refreshToken, response.user);
       toast.success('Login successful!');
       navigate('/projects');
     } catch (err: any) {
