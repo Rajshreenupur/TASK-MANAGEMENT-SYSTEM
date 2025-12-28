@@ -7,6 +7,8 @@ import ProjectList from "./pages/ProjectList";
 import ProjectDetail from "./pages/ProjectDetail";
 import KanbanBoard from "./pages/KanbanBoard";
 import TaskList from "./pages/TaskList";
+import UserManagement from './pages/UserManagement';
+
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -76,6 +78,14 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route
+          path="/users"
+          element={
+            <PrivateRoute>
+              <UserManagement />
+            </PrivateRoute>
+          }
+        />
           <Route path="/" element={<Navigate to="/projects" />} />
         </Routes>
       </BrowserRouter>

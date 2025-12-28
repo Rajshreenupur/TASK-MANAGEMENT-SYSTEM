@@ -12,11 +12,14 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
     return;
   }
 
+  const userCount = await User.countDocuments();
+  const role = userCount === 0 ? 'OWNER' : 'MEMBER';
+
   const user = await User.create({
     email,
     password,
     name,
-    role: 'MEMBER',
+    role,
   });
 
   const token = generateToken({

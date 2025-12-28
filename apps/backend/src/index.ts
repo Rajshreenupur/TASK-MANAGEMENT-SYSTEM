@@ -6,6 +6,7 @@ import { connectDB } from './config/database';
 import authRoutes from './routes/auth.routes.js';
 import projectRoutes from './routes/project.routes.js';
 import taskRoutes from './routes/task.routes.js';
+import userRoutes from './routes/user.routes.js'
 import { errorHandler } from './middleware/errorHandler.js';
 import { generalRateLimiter } from './middleware/rateLimiter.js';
 
@@ -25,6 +26,7 @@ app.use('/api', generalRateLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
 
 app.use(errorHandler);
 
