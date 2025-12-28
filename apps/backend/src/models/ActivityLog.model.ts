@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ActivityAction = 'TASK_CREATED' | 'TASK_STATUS_CHANGED' | 'TASK_ASSIGNED' | 'TASK_UPDATED';
+export type ActivityAction = 'TASK_CREATED' | 'TASK_STATUS_CHANGED' | 'TASK_ASSIGNED' | 'TASK_REASSIGNED' | 'TASK_UPDATED';
 
 export interface IActivityLog extends Document {
   taskId: mongoose.Types.ObjectId;
@@ -21,7 +21,7 @@ const activityLogSchema = new Schema<IActivityLog>(
     },
     action: {
       type: String,
-      enum: ['TASK_CREATED', 'TASK_STATUS_CHANGED', 'TASK_ASSIGNED', 'TASK_UPDATED'],
+      enum: ['TASK_CREATED', 'TASK_STATUS_CHANGED', 'TASK_ASSIGNED', 'TASK_REASSIGNED', 'TASK_UPDATED'],
       required: true,
     },
     performedBy: {

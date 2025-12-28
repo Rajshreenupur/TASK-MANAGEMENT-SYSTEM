@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import { Task, TaskStatus } from '../models/Task.model.js';
 import { ActivityLog } from '../models/ActivityLog.model.js';
+import { User } from '../models/User.model.js';
 import { isValidTransition } from '../utils/taskStateTransition.js';
 
 export const createTask = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -12,12 +13,14 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
+  
+  const taskAssignee = assignee || userId;
 
   const task = await Task.create({
     title,
     description,
     projectId,
-    assignee: assignee || undefined,
+    assignee: taskAssignee,
     priority: priority || 'MEDIUM',
     status: 'BACKLOG',
     createdBy: userId,
@@ -30,6 +33,19 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
     newValue: 'BACKLOG',
     metadata: {
       title: task.title,
+    },
+  });
+
+  const assignedUser = await User.findById(taskAssignee).select('name');
+  await ActivityLog.create({
+    taskId: task._id,
+    action: 'TASK_ASSIGNED',
+    performedBy: userId,
+    previousValue: 'Unassigned',
+    newValue: taskAssignee,
+    metadata: {
+      previousAssigneeName: 'Unassigned',
+      newAssigneeName: assignedUser?.name || 'Unknown',
     },
   });
 
@@ -131,14 +147,38 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
     });
   }
 
-  if (updates.assignee && updates.assignee !== task.assignee?.toString()) {
-    await ActivityLog.create({
-      taskId: task._id,
-      action: 'TASK_ASSIGNED',
-      performedBy: userId,
-      previousValue: task.assignee?.toString() || 'Unassigned',
-      newValue: updates.assignee,
-    });
+  if (updates.assignee !== undefined) {
+    const newAssigneeId = updates.assignee || null;
+    const currentAssigneeId = task.assignee?.toString() || null;
+    
+    if (newAssigneeId !== currentAssigneeId) {
+      const action = currentAssigneeId ? 'TASK_REASSIGNED' : 'TASK_ASSIGNED';
+      
+      let previousAssigneeName = 'Unassigned';
+      let newAssigneeName = 'Unassigned';
+      
+      if (currentAssigneeId) {
+        const prevUser = await User.findById(currentAssigneeId).select('name');
+        if (prevUser) previousAssigneeName = prevUser.name;
+      }
+      
+      if (newAssigneeId) {
+        const newUser = await User.findById(newAssigneeId).select('name');
+        if (newUser) newAssigneeName = newUser.name;
+      }
+      
+      await ActivityLog.create({
+        taskId: task._id,
+        action,
+        performedBy: userId,
+        previousValue: currentAssigneeId || 'Unassigned',
+        newValue: newAssigneeId || 'Unassigned',
+        metadata: {
+          previousAssigneeName,
+          newAssigneeName,
+        },
+      });
+    }
   }
 
   Object.assign(task, updates);

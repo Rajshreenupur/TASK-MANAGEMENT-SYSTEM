@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { taskApi, Task, TaskStatus, ActivityLog } from '../api/task';
+import { projectApi, Project } from '../api/project';
 
 interface TaskDetailSheetProps {
   task: Task;
@@ -26,6 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
   TASK_CREATED: 'Task Created',
   TASK_STATUS_CHANGED: 'Status Changed',
   TASK_ASSIGNED: 'Assigned',
+  TASK_REASSIGNED: 'Reassigned',
   TASK_UPDATED: 'Updated',
 };
 
@@ -38,6 +41,9 @@ export default function TaskDetailSheet({
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [taskData, setTaskData] = useState<Task>(task);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loadingProject, setLoadingProject] = useState(false);
+  const [isReassigning, setIsReassigning] = useState(false);
 
   useEffect(() => {
     setTaskData(task);
@@ -47,6 +53,7 @@ export default function TaskDetailSheet({
     if (isOpen && task._id) {
       fetchActivityLogs();
       fetchTaskDetails();
+      fetchProject();
     }
   }, [isOpen, task._id]);
 
@@ -68,6 +75,35 @@ export default function TaskDetailSheet({
       setTaskData(response.task);
     } catch (err) {
       console.error('Failed to load task details', err);
+    }
+  };
+
+  const fetchProject = async () => {
+    const projectId = typeof task.projectId === 'string' ? task.projectId : task.projectId._id;
+    if (!projectId) return;
+    
+    try {
+      setLoadingProject(true);
+      const response = await projectApi.getById(projectId);
+      setProject(response.project);
+    } catch (err) {
+      console.error('Failed to load project', err);
+    } finally {
+      setLoadingProject(false);
+    }
+  };
+
+  const handleReassign = async (newAssigneeId: string | null) => {
+    try {
+      setIsReassigning(true);
+      await taskApi.update(task._id, { assignee: newAssigneeId || undefined });
+      toast.success('Task reassigned successfully!');
+      await fetchTaskDetails();
+      await fetchActivityLogs();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to reassign task');
+    } finally {
+      setIsReassigning(false);
     }
   };
 
@@ -100,9 +136,23 @@ export default function TaskDetailSheet({
       return `Status changed from ${log.previousValue} to ${log.newValue}`;
     }
     if (log.action === 'TASK_ASSIGNED') {
-      return `Assigned to user (${log.newValue})`;
+      return `Assigned to user`;
+    }
+    if (log.action === 'TASK_REASSIGNED') {
+      return `Reassigned from user to user`;
     }
     return `${ACTION_LABELS[log.action] || log.action}`;
+  };
+
+  const getAvailableAssignees = () => {
+    if (!project) return [];
+    const assignees = [{ _id: project.owner._id, name: project.owner.name, email: project.owner.email }];
+    project.members.forEach(member => {
+      if (member._id !== project.owner._id) {
+        assignees.push(member);
+      }
+    });
+    return assignees;
   };
 
   if (!isOpen) return null;
@@ -182,14 +232,43 @@ export default function TaskDetailSheet({
             </div>
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-1">Created By</h4>
-              <p className="text-gray-600">{taskData.createdBy.name}</p>
-            </div>
-            {taskData.assignee && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-1">Assigned To</h4>
-                <p className="text-gray-600">{taskData.assignee.name}</p>
+              <div className="flex items-center text-gray-600">
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                {taskData.createdBy.name}
               </div>
-            )}
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-1">Assigned To</h4>
+              {loadingProject ? (
+                <p className="text-gray-400 text-sm">Loading...</p>
+              ) : (
+                <select
+                  value={taskData.assignee?._id || ''}
+                  onChange={(e) => handleReassign(e.target.value || null)}
+                  disabled={isReassigning}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {getAvailableAssignees().map((assignee) => (
+                    <option key={assignee._id} value={assignee._id}>
+                      {assignee.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-1">Created At</h4>
               <p className="text-gray-600">{formatDate(taskData.createdAt)}</p>
@@ -243,14 +322,18 @@ export default function TaskDetailSheet({
                       <p className="text-sm text-gray-600 mt-1">
                         by {log.performedBy.name}
                       </p>
-                      {log.previousValue && log.newValue && (
+                      {(log.action === 'TASK_STATUS_CHANGED' || log.action === 'TASK_REASSIGNED' || log.action === 'TASK_ASSIGNED') && log.previousValue && log.newValue && (
                         <div className="mt-2 flex items-center space-x-2 text-xs">
                           <span className="px-2 py-1 bg-red-100 text-red-700 rounded">
-                            {log.previousValue}
+                            {log.action === 'TASK_REASSIGNED' || log.action === 'TASK_ASSIGNED'
+                              ? (log.metadata?.previousAssigneeName || (log.previousValue === 'Unassigned' ? 'Unassigned' : log.previousValue))
+                              : log.previousValue}
                           </span>
                           <span className="text-gray-400">→</span>
                           <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
-                            {log.newValue}
+                            {log.action === 'TASK_REASSIGNED' || log.action === 'TASK_ASSIGNED'
+                              ? (log.metadata?.newAssigneeName || (log.newValue === 'Unassigned' ? 'Unassigned' : log.newValue))
+                              : log.newValue}
                           </span>
                         </div>
                       )}

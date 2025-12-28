@@ -54,6 +54,10 @@ export interface ActivityLog {
   };
   previousValue?: string;
   newValue?: string;
+  metadata?: {
+    previousAssigneeName?: string;
+    newAssigneeName?: string;
+  };
   createdAt: string;
 }
 
