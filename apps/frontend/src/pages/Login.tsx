@@ -21,12 +21,22 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const response = await authApi.login(data);
+      console.log(response)
       setAuth(response.token, response.refreshToken, response.user);
       toast.success('Login successful!');
       navigate('/projects');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || 'Login failed. Please try again.';
-      toast.error(errorMessage);
+      console.log(err)
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (err.response) {
+        errorMessage = err.response?.data?.error || err.response?.data?.message || errorMessage;
+      } else if (err.request) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+      toast.error(errorMessage);  
     }
   };
 
