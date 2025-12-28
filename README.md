@@ -65,6 +65,7 @@ User Request → Rate Limiter → Authentication Middleware → Authorization Mi
 ### Development Tools
 - **Monorepo**: Turborepo
 - **Version Control**: Git
+- **Testing**: Jest with TypeScript support
 
 ## Setup Instructions
 
@@ -179,6 +180,36 @@ npm run build
 ```
 
 This builds both frontend and backend applications.
+
+### Running Tests
+
+To run unit tests for business logic:
+
+```bash
+cd apps/backend
+npm test
+```
+
+To run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+To generate coverage reports:
+
+```bash
+npm run test:coverage
+```
+
+The test suite includes:
+- Task state transition validation (32 tests)
+- Request validation schemas (25 tests)
+- Authorization middleware logic (18 tests)
+- Task business logic (10 tests)
+- Activity log business logic (10 tests)
+
+See `apps/backend/TEST_README.md` for detailed testing documentation.
 
 ## Project Structure
 
@@ -309,6 +340,20 @@ Tasks follow a strict state machine with the following transitions:
 | REVIEW        | DONE              | Task moves from review to completion |
 | DONE          | (No transitions)  | Completed tasks cannot be moved back |
 
+### Task Assignment and Reassignment
+
+The system supports comprehensive task assignment functionality:
+
+1. **Default Assignment**: When a task is created without specifying an assignee, it is automatically assigned to the creator
+2. **Assignment During Creation**: Users can assign tasks to any project member (owner or members) during task creation via the Create Task modal
+3. **Task Reassignment**: Tasks can be reassigned to different project members through the Task Detail Sheet
+4. **Activity Tracking**: All assignment and reassignment actions are logged in the activity log with:
+   - Previous assignee name (or "Unassigned")
+   - New assignee name
+   - User who performed the action
+   - Timestamp
+5. **Creator Display**: Task cards in both Kanban and List views display the creator's name with an icon for easy identification
+
 ### Implementation Details
 
 State transitions are enforced server-side with multiple validation layers:
@@ -348,6 +393,30 @@ const ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 2. **Data Integrity**: Prevents invalid states that could break reporting
 3. **Audit Trail**: Clear history of task progression
 4. **User Experience**: Prevents user errors by disallowing invalid actions
+
+### Task Assignment and Reassignment
+
+The system supports comprehensive task assignment functionality:
+
+1. **Default Assignment**: When a task is created without specifying an assignee, it is automatically assigned to the creator
+2. **Assignment During Creation**: Users can assign tasks to any project member (owner or members) during task creation via the Create Task modal
+3. **Task Reassignment**: Tasks can be reassigned to different project members through the Task Detail Sheet
+4. **Activity Tracking**: All assignment and reassignment actions are logged in the activity log with:
+   - Previous assignee name (or "Unassigned")
+   - New assignee name
+   - User who performed the action
+   - Timestamp
+5. **Creator Display**: Task cards in both Kanban and List views display the creator's name with an icon for easy identification
+
+### Activity Logging for State Changes
+
+Every state transition and assignment change is automatically logged:
+
+- **Task Creation**: Logs task creation with initial status (BACKLOG) and assignment
+- **Status Changes**: Logs previous and new status with user who made the change
+- **Assignments**: Logs initial assignment (TASK_ASSIGNED) with assignee name
+- **Reassignments**: Logs reassignment (TASK_REASSIGNED) with previous and new assignee names
+- **Metadata**: Stores user-friendly names in metadata for better display in activity logs
 
 ## Performance Considerations
 
@@ -918,7 +987,6 @@ Potential improvements (not implemented but considered):
 
 ### Low Priority
 - Docker containerization
-- Unit and integration tests
 - Advanced filtering and sorting
 - Task dependencies
 - Time tracking
