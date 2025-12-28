@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { TaskPriority } from '../api/task';
+import { projectApi, Project } from '../api/project';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -7,6 +9,7 @@ interface CreateTaskModalProps {
     title: string;
     description: string;
     priority: TaskPriority;
+    assignee?: string;
   }) => void;
   taskTitle: string;
   setTaskTitle: (title: string) => void;
@@ -14,6 +17,7 @@ interface CreateTaskModalProps {
   setTaskDescription: (description: string) => void;
   taskPriority: TaskPriority;
   setTaskPriority: (priority: TaskPriority) => void;
+  projectId: string;
 }
 
 export default function CreateTaskModal({
@@ -26,7 +30,41 @@ export default function CreateTaskModal({
   setTaskDescription,
   taskPriority,
   setTaskPriority,
+  projectId,
 }: CreateTaskModalProps) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [loadingProject, setLoadingProject] = useState(false);
+  const [assignee, setAssignee] = useState<string>('');
+
+  useEffect(() => {
+    if (isOpen && projectId) {
+      fetchProject();
+    }
+  }, [isOpen, projectId]);
+
+  const fetchProject = async () => {
+    try {
+      setLoadingProject(true);
+      const response = await projectApi.getById(projectId);
+      setProject(response.project);
+    } catch (err) {
+      console.error('Failed to load project', err);
+    } finally {
+      setLoadingProject(false);
+    }
+  };
+
+  const getAvailableAssignees = () => {
+    if (!project) return [];
+    const assignees = [{ _id: project.owner._id, name: project.owner.name, email: project.owner.email }];
+    project.members.forEach(member => {
+      if (member._id !== project.owner._id) {
+        assignees.push(member);
+      }
+    });
+    return assignees;
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,6 +73,7 @@ export default function CreateTaskModal({
       title: taskTitle,
       description: taskDescription,
       priority: taskPriority,
+      assignee: assignee || undefined,
     });
   };
 
@@ -42,6 +81,7 @@ export default function CreateTaskModal({
     setTaskTitle('');
     setTaskDescription('');
     setTaskPriority('MEDIUM');
+    setAssignee('');
     onClose();
   };
 
@@ -128,6 +168,30 @@ export default function CreateTaskModal({
               <option value="MEDIUM">Medium Priority</option>
               <option value="HIGH">High Priority</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Assign To
+            </label>
+            {loadingProject ? (
+              <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-400">
+                Loading members...
+              </div>
+            ) : (
+              <select
+                value={assignee}
+                onChange={(e) => setAssignee(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white appearance-none cursor-pointer"
+              >
+                <option value="">Assign to creator (default)</option>
+                {getAvailableAssignees().map((member) => (
+                  <option key={member._id} value={member._id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Buttons */}

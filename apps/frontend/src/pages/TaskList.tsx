@@ -127,6 +127,7 @@ export default function TaskList() {
     title: string;
     description: string;
     priority: TaskPriority;
+    assignee?: string;
   }) => {
     if (!projectId) return;
     try {
@@ -135,6 +136,7 @@ export default function TaskList() {
         description: data.description,
         projectId,
         priority: data.priority,
+        assignee: data.assignee,
       });
       toast.success('Task created successfully!');
       setShowCreateModal(false);
@@ -494,9 +496,9 @@ export default function TaskList() {
         setTaskDescription={setTaskDescription}
         taskPriority={taskPriority}
         setTaskPriority={setTaskPriority}
+        projectId={projectId || ''}
       />
 
-      {/* Task Detail Sheet */}
       {selectedTask && (
         <TaskDetailSheet
           task={selectedTask}

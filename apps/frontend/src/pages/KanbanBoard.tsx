@@ -73,6 +73,7 @@ export default function KanbanBoard() {
     title: string;
     description: string;
     priority: TaskPriority;
+    assignee?: string;
   }) => {
     if (!projectId) return;
     try {
@@ -81,6 +82,7 @@ export default function KanbanBoard() {
         description: data.description,
         projectId,
         priority: data.priority,
+        assignee: data.assignee,
       });
       toast.success('Task created successfully!');
       setShowCreateModal(false);
@@ -260,6 +262,7 @@ export default function KanbanBoard() {
           setTaskDescription={setTaskDescription}
           taskPriority={taskPriority}
           setTaskPriority={setTaskPriority}
+          projectId={projectId || ''}
         />
       </div>
     </Layout>
